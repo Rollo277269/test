@@ -9,6 +9,49 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css"
     />
     <style>
+      /* Evidenziazione intervallo "a pillola" più leggibile */
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+  position: relative !important;
+  z-index: 1 !important;
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(79,70,229,.35) !important;
+}
+
+.flatpickr-day.inRange {
+  background: linear-gradient(90deg, rgba(79,70,229,.18), rgba(99,102,241,.18)) !important;
+  color: var(--text) !important;
+  border-radius: 0 !important;
+}
+
+.flatpickr-day.startRange ~ .flatpickr-day.inRange,
+.flatpickr-day.inRange ~ .flatpickr-day.endRange {
+  border-radius: 0 !important;
+}
+
+/* Rafforza header mese+anno */
+.flatpickr-current-month {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+.live-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  margin-left: 8px;
+  box-shadow: 0 0 0 0 rgba(16,185,129,.7);
+  animation: livePulse 1.6s infinite;
+}
+
+@keyframes livePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,.7); }
+  70%  { box-shadow: 0 0 0 10px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
       :root {
         --bg: #0a0a0b;
         --panel: #1a1a1d;
@@ -35,6 +78,52 @@
         color: var(--text);
         line-height: 1.5;
       }
+      /* Usa tutta l’altezza della viewport */
+.dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  height: 100vh;           /* <— prima era min-height, usa height */
+}
+
+.main-content {
+  display: grid;           /* <— da flex a grid */
+  grid-template-rows: auto 1fr; /* metriche sopra, grafici sotto che si espandono */
+  gap: 24px;
+  min-height: 0;           /* importante per evitare overflow */
+}
+
+.chart-section {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  min-height: 0;           /* consente alle card di contrarsi */
+}
+
+.chart-card,
+.details-card {
+  height: 100%;            /* riempiono lo spazio disponibile */
+}
+
+.details-card {
+  overflow: auto;          /* scroll interno solo qui se serve */
+}
+
+.chart-canvas {
+  height: 100% !important; /* il canvas segue l’altezza della card */
+}
+
+/* Su tablet/mobile passa ad 1 colonna mantenendo la logica a misura schermo */
+@media (max-width: 1024px) {
+  .dashboard { grid-template-columns: 1fr; height: auto; }
+  .main-content { grid-template-rows: auto 1fr; }
+  .chart-section { grid-template-columns: 1fr; }
+  .chart-card, .details-card { min-height: 320px; }
+}
+
       .dashboard {
         max-width: 1400px;
         margin: 0 auto;
@@ -48,11 +137,6 @@
         display: flex;
         flex-direction: column;
         gap: 20px;
-      }
-      .main-content {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
       }
       .card {
         background: var(--panel);
@@ -559,6 +643,7 @@
           <div class="card chart-card">
             <div class="chart-header">
               <h3 class="chart-title">Andamento Prezzi Competizione</h3>
+              <span class="live-dot" title="Live"></span>
               <div class="avg-price" id="mainAvgPrice">... €</div>
             </div>
             <canvas id="priceChart" class="chart-canvas"></canvas>
@@ -566,6 +651,7 @@
           <div class="card details-card">
             <div class="chart-header">
               <h3 class="chart-title">Dettagli Appartamenti</h3>
+              <span class="live-dot" title="Live"></span>
             </div>
             <div id="apartmentsList">
               <div class="empty-state">
@@ -611,6 +697,9 @@
       // UI: Flatpickr
       // -----------------------------
       const fp = flatpickr('#daterange', {
+      showMonths: 2,
+        disableMobile: true,
+        monthSelectorType: 'static',
         mode: 'range',
         dateFormat: 'd/m/Y',
         locale: 'it',
@@ -910,26 +999,24 @@ function sheetsValueToISODate(v) {
 
   // Normalizza date e filtra
   const filtered = rows.filter(r => {
-    const eISO = sheetsValueToISODate(r[4]); // E start-date
-    const fISO = sheetsValueToISODate(r[5]); // F end-date
+    const eISO = sheetsValueToISODate(r[4]); // E = start-date
+    const fISO = sheetsValueToISODate(r[5]); // F = end-date
     return eISO === startDate && fISO === endDate;
   });
 
-  // Mappa secondo il tuo schema colonne
+  // Mappa secondo lo schema colonne (A-F)
   const mapped = filtered.map((r, idx) => ({
     url: r[0] || '',
     name: r[1] || '',
-    price: Number(r[2] || 0),          // C = price
-    avgPriceRow: Number(r[3] || 0),    // D = avrg.price
+    price: Number(r[2] || 0),          // C = price €/notte
+    avgPriceRow: Number(r[3] || 0),    // D = avrg. price (non indispensabile)
     start_date: sheetsValueToISODate(r[4]) || '',
     end_date: sheetsValueToISODate(r[5]) || '',
-    id: (r[1] && String(r[1]).trim()) || `#${idx + 1}`, // usa name come “id” visivo, fallback numerico
-    address: r[0] || ''                // per UI: mostriamo l’URL come info secondaria
+    id: (r[1] && String(r[1]).trim()) || `#${idx + 1}`,
+    address: r[0] || ''
   }));
 
-  // Debug utile: commenta in produzione
-  console.log('🔎 Rows totali:', rows.length, ' | Filtrate:', mapped.length, {startDate, endDate});
-
+  console.log('🔎 Rows totali:', rows.length, ' | Filtrate:', mapped.length, { startDate, endDate });
   return mapped;
 }
 
@@ -1082,30 +1169,84 @@ function sheetsValueToISODate(v) {
 
             // 3) Timer fisso di 240 secondi con barra
             const fixedDelaySeconds = 5;
-            document.getElementById('statusText').textContent = `Attesa elaborazione (${fixedDelaySeconds / 60} minuti)...`;
+            document.getElementById('statusText').textContent = `Attesa elaborazione (${fixedDelaySeconds}s)...`;
             await runProgressTimer(fixedDelaySeconds);
 
             // 4) Lettura finale da Sheets
-            document.getElementById('statusText').textContent = 'Recupero risultati finali...';
-            const apartmentsData = await getApartmentDataFromGoogleSheets(startDate, endDate);
-            console.log('📄 Rows ricevute:', apartmentsData?.length);
+            // 4) Lettura finale da Sheets
+document.getElementById('statusText').textContent = 'Recupero risultati finali...';
+const apartmentsData = await getApartmentDataFromGoogleSheets(startDate, endDate);
+console.log('📄 Rows ricevute:', apartmentsData?.length);
 
-            if (!apartmentsData || apartmentsData.length === 0) {
-              document.getElementById('statusText').textContent = 'Nessun appartamento trovato per le date selezionate';
-              this.disabled = false;
-            }
+// Se non arrivano dati, esci
+if (!apartmentsData || apartmentsData.length === 0) {
+  document.getElementById('apartmentsList').innerHTML = `
+    <div class="empty-state">
+      <p>Nessun dato disponibile</p>
+      <p style="font-size: 12px; margin-top: 8px;">Avvia un'analisi per vedere i dettagli</p>
+    </div>`;
+  document.getElementById('statusText').textContent = 'Nessun appartamento trovato per le date selezionate';
+  this.disabled = false;
+  return; // <— importante per non proseguire
+}
 
-            // 5) Aggiornamento dashboard
-            currentAnalysis.apartments = apartmentsData;
-            completeDashboardUpdate();
-          } catch (error) {
+/* --------------------------
+   5a) DETTAGLI APPARTAMENTI
+   -------------------------- */
+const listContainer = document.getElementById('apartmentsList');
+listContainer.innerHTML = '';
+apartmentsData.forEach((apt, index) => {
+  const item = document.createElement('div');
+  item.className = 'detail-item';
+  item.innerHTML = `
+    <div class="detail-info">
+      <div class="detail-id">${apt.name || ('Annuncio #' + (index+1))}</div>
+      <div class="detail-address" style="margin-top:2px;">
+        <a href="${apt.url}" target="_blank" style="color: var(--accent); font-size: 12px; text-decoration: none;">
+          🔗 ${apt.url}
+        </a>
+      </div>
+    </div>
+    <div class="detail-price">${Number(apt.price||0).toLocaleString('it-IT')} € / notte</div>
+  `;
+  listContainer.appendChild(item);
+});
+
+/* --------------------------
+   3a) GRAFICO: Nome + Prezzo
+   -------------------------- */
+if (priceChart) {
+  const labels = apartmentsData.map(a => a.name || a.id || '—');
+  const data = apartmentsData.map(a => Number(a.price || 0));
+
+  priceChart.data.labels = labels;
+  priceChart.data.datasets[0].data = data;
+  priceChart.data.datasets[0].label = 'Prezzo per annuncio (€/notte)';
+  priceChart.update();
+
+  // Aggiorna metriche
+  const minP = Math.min(...data);
+  const maxP = Math.max(...data);
+  const avgP = Math.round(data.reduce((s,v)=>s+v,0) / data.length);
+
+  document.getElementById('avgPrice').textContent = `${avgP.toLocaleString('it-IT')} €`;
+  document.getElementById('mainAvgPrice').textContent = `${avgP.toLocaleString('it-IT')} €`;
+  document.getElementById('priceRange').textContent = `${minP.toLocaleString('it-IT')}-${maxP.toLocaleString('it-IT')}€`;
+  document.getElementById('totalApartments').textContent = data.length;
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+}
+
+// Stato finale
+document.getElementById('statusText').textContent = 'Analisi completata con successo';
+this.disabled = false;
+
+           } catch (error) {
             console.error('❌ Errore processo spia:', error);
             document.getElementById('statusText').textContent = 'Errore durante l’analisi';
             this.disabled = false;
           }
         });
       });
-    </script>
     </script>
   </body>
 </html>
