@@ -879,23 +879,59 @@
         }
         return delay === null ? 2 : delay;
       }
-
+// Converte un valore date di Google Sheets (numero seriale o stringa) in ISO "YYYY-MM-DD"
+function sheetsValueToISODate(v) {
+  if (v == null || v === '') return '';
+  // Se è un numero: seriale Google/Excel (giorni dal 1899-12-30)
+  if (typeof v === 'number') {
+    const base = new Date(Date.UTC(1899, 11, 30));
+    const ms = v * 24 * 60 * 60 * 1000;
+    const d = new Date(base.getTime() + ms);
+    return d.toISOString().slice(0, 10);
+  }
+  // Se è stringa tipo "dd/mm/yyyy" o "dd-mm-yyyy"
+  if (typeof v === 'string') {
+    const m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if (m) {
+      const dd = String(m[1]).padStart(2,'0');
+      const mm = String(m[2]).padStart(2,'0');
+      let yyyy = m[3];
+      if (yyyy.length === 2) yyyy = (Number(yyyy) < 50 ? '20' : '19') + yyyy;
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    // Se è già ISO
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  }
+  return '';
+}
       async function getApartmentDataFromGoogleSheets(startDate, endDate) {
-        const resp = await sheetsGet('Foglio1!A2:G10000');
-        const rows = resp.values || [];
-        const filtered = rows.filter(r => r[4] === startDate && r[5] === endDate);
+  const resp = await sheetsGet('A2:F10000'); // <-- non serve la colonna G
+  const rows = resp.values || [];
 
-        return filtered.map(r => ({
-          url: r[0] || '',
-          price: Number(r[1] || 0),
-          delay: Number.parseInt(r[2] || 0, 10),
-          avgPriceRow: Number(r[3] || 0),
-          start_date: r[4] || '',
-          end_date: r[5] || '',
-          id: r[6] || '',
-          address: r[0] || ''
-        }));
-      }
+  // Normalizza date e filtra
+  const filtered = rows.filter(r => {
+    const eISO = sheetsValueToISODate(r[4]); // E start-date
+    const fISO = sheetsValueToISODate(r[5]); // F end-date
+    return eISO === startDate && fISO === endDate;
+  });
+
+  // Mappa secondo il tuo schema colonne
+  const mapped = filtered.map((r, idx) => ({
+    url: r[0] || '',
+    name: r[1] || '',
+    price: Number(r[2] || 0),          // C = price
+    avgPriceRow: Number(r[3] || 0),    // D = avrg.price
+    start_date: sheetsValueToISODate(r[4]) || '',
+    end_date: sheetsValueToISODate(r[5]) || '',
+    id: (r[1] && String(r[1]).trim()) || `#${idx + 1}`, // usa name come “id” visivo, fallback numerico
+    address: r[0] || ''                // per UI: mostriamo l’URL come info secondaria
+  }));
+
+  // Debug utile: commenta in produzione
+  console.log('🔎 Rows totali:', rows.length, ' | Filtrate:', mapped.length, {startDate, endDate});
+
+  return mapped;
+}
 
       // -----------------------------
       // Real-time/progressive helpers
