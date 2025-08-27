@@ -881,7 +881,7 @@
       }
 
       async function getApartmentDataFromGoogleSheets(startDate, endDate) {
-        const resp = await sheetsGet('A2:G10000');
+        const resp = await sheetsGet('Foglio1!A2:G10000');
         const rows = resp.values || [];
         const filtered = rows.filter(r => r[4] === startDate && r[5] === endDate);
 
