@@ -1,348 +1,1254 @@
 <!doctype html>
 <html lang="it">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Spia Competizione — Dashboard (Mock)</title>
-  <style>
-    :root{
-      --bg:#0a0a0b;--panel:#1a1a1d;--panel-light:#242429;
-      --accent:#4f46e5;--accent-light:#6366f1;
-      --success:#10b981;--warning:#f59e0b;
-      --text:#f8fafc;--text-muted:#94a3b8;--text-2:#64748b;
-      --border:rgba(148,163,184,.1);--shadow:rgba(0,0,0,.5);
-      --glow:0 0 0 2px rgba(79,70,229,.15), 0 10px 30px rgba(79,70,229,.25);
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
-    /* Layout full viewport */
-    .dashboard{
-      max-width:1400px;margin:0 auto;padding:24px;
-      display:grid;grid-template-columns:360px 1fr;gap:24px;height:100dvh;
-    }
-    .sidebar,.main{min-height:0}
-    .sidebar{display:flex;flex-direction:column;gap:20px}
-    .main{display:flex;flex-direction:column;gap:24px;overflow:hidden}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 4px 20px var(--shadow)}
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Spia Competizione — Dashboard Appartamenti</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css"
+    />
+    <style>
+      /* Evidenziazione intervallo "a pillola" più leggibile */
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+  position: relative !important;
+  z-index: 1 !important;
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(79,70,229,.35) !important;
+}
 
-    /* Header */
-    .header{display:flex;justify-content:space-between;align-items:center}
-    .title{display:flex;align-items:center;gap:10px;font-size:24px;font-weight:800}
-    .led{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
-    .tabs{display:flex;gap:8px;background:var(--panel-light);padding:4px;border-radius:12px}
-    .tab{padding:8px 16px;border:none;border-radius:8px;background:transparent;color:var(--text-muted);font-weight:700}
-    .tab.active{background:var(--accent);color:#fff;box-shadow:var(--glow)}
+.flatpickr-day.inRange {
+  background: linear-gradient(90deg, rgba(79,70,229,.18), rgba(99,102,241,.18)) !important;
+  color: var(--text) !important;
+  border-radius: 0 !important;
+}
 
-    /* Form */
-    .group{margin-top:18px}
-    .label{font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:8px;display:block}
-    .input-row{display:flex;gap:12px}
-    .input{flex:1;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--panel-light);color:var(--text)}
-    .pills{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
-    .pill{padding:6px 10px;border-radius:999px;background:var(--panel-light);border:1px solid var(--border);font-size:12px;color:var(--text-muted)}
-    .pill.strong{background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;border-color:transparent}
-    .shortcuts{display:flex;gap:8px;margin-top:8px}
-    .btn-s{padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--panel-light);color:var(--text-muted);font-size:12px}
-    .btn-s.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-    .btn{width:100%;margin-top:14px;padding:14px;border-radius:12px;border:none;
-         background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;font-weight:900}
-    .help{margin-top:8px;font-size:11px;color:var(--text-2)}
+.flatpickr-day.startRange ~ .flatpickr-day.inRange,
+.flatpickr-day.inRange ~ .flatpickr-day.endRange {
+  border-radius: 0 !important;
+}
 
-    /* Progress (mock) */
-    .status{display:flex;align-items:center;gap:8px;margin-top:16px}
-    .status .dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
-    .status .text{font-size:12px;color:var(--text-muted)}
-    .bar{width:100%;height:8px;border-radius:6px;background:var(--panel-light);overflow:hidden;margin-top:8px}
-    .fill{height:100%;width:100%;background:linear-gradient(90deg,var(--accent),var(--accent-light))}
+/* Rafforza header mese+anno */
+.flatpickr-current-month {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+.live-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  margin-left: 8px;
+  box-shadow: 0 0 0 0 rgba(16,185,129,.7);
+  animation: livePulse 1.6s infinite;
+}
 
-    /* Metrics */
-    .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-    .metric{text-align:center;border:1px solid var(--border);border-radius:12px;padding:18px;background:var(--panel)}
-    .metric .val{font-size:24px;font-weight:800}
-    .metric .lbl{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+@keyframes livePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,.7); }
+  70%  { box-shadow: 0 0 0 10px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
 
-    /* Lower grid */
-    .lower{display:grid;grid-template-columns:2fr 1fr;gap:24px;min-height:0;flex:1}
-    .chart-card{display:flex;flex-direction:column;min-height:0}
-    .chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-    .chart-title{font-size:18px;font-weight:800}
-    .chart-avg{font-size:28px;font-weight:900;
-      background:linear-gradient(135deg,var(--accent),var(--accent-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .chart-box{flex:1;min-height:0;border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--panel)}
-    .chart-svg{width:100%;height:100%}
+      :root {
+        --bg: #0a0a0b;
+        --panel: #1a1a1d;
+        --panel-light: #242429;
+        --accent: #4f46e5;
+        --accent-light: #6366f1;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --text-secondary: #64748b;
+        --border: rgba(148, 163, 184, 0.1);
+        --shadow: rgba(0, 0, 0, 0.5);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      /* Usa tutta l’altezza della viewport */
+.dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  height: 100vh;           /* <— prima era min-height, usa height */
+}
 
-    .details{display:flex;flex-direction:column;min-height:0}
-    .details-head{display:flex;justify-content:space-between;align-items:center}
-    .toggle{display:flex;gap:6px;background:var(--panel-light);padding:4px;border-radius:10px}
-    .toggle .t{border:none;border-radius:8px;padding:8px 10px;background:transparent;color:var(--text-muted);font-weight:800}
-    .toggle .t.active{background:var(--accent);color:#fff}
-    .list{margin-top:12px;overflow:auto;flex:1}
-    .item{display:flex;justify-content:space-between;align-items:center;background:var(--panel-light);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px}
-    .i-info{display:flex;flex-direction:column;gap:2px}
-    .i-name{font-weight:800}
-    .i-sub{font-size:12px;color:var(--text-muted)}
-    .i-price{font-weight:900;color:var(--accent)}
-    .list::-webkit-scrollbar{width:6px}
-    .list::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
+.main-content {
+  display: grid;           /* <— da flex a grid */
+  grid-template-rows: auto 1fr; /* metriche sopra, grafici sotto che si espandono */
+  gap: 24px;
+  min-height: 0;           /* importante per evitare overflow */
+}
 
-    @media (max-width:1024px){
-      .dashboard{grid-template-columns:1fr;padding:16px;height:auto;min-height:100dvh}
-      .metrics{grid-template-columns:repeat(2,1fr)}
-      .lower{grid-template-columns:1fr}
-      .chart-box{height:300px}
-    }
-  </style>
-</head>
-<body>
-  <div class="dashboard">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="header">
-        <div class="title"><span class="led"></span> Spia Competizione</div>
-        <div class="tabs">
-          <button class="tab active">App. 1</button>
-          <button class="tab">App. 2</button>
+.chart-section {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  min-height: 0;           /* consente alle card di contrarsi */
+}
+
+.chart-card,
+.details-card {
+  height: 100%;            /* riempiono lo spazio disponibile */
+}
+
+.details-card {
+  overflow: auto;          /* scroll interno solo qui se serve */
+}
+
+.chart-canvas {
+  height: 100% !important; /* il canvas segue l’altezza della card */
+}
+
+/* Su tablet/mobile passa ad 1 colonna mantenendo la logica a misura schermo */
+@media (max-width: 1024px) {
+  .dashboard { grid-template-columns: 1fr; height: auto; }
+  .main-content { grid-template-rows: auto 1fr; }
+  .chart-section { grid-template-columns: 1fr; }
+  .chart-card, .details-card { min-height: 320px; }
+}
+
+      .dashboard {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 24px;
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 24px;
+        min-height: 100vh;
+      }
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .card {
+        background: var(--panel);
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 20px var(--shadow);
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .apartment-tabs {
+        display: flex;
+        gap: 8px;
+        background: var(--panel-light);
+        padding: 4px;
+        border-radius: 12px;
+      }
+      .tab {
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-muted);
+        transition: all 0.2s ease;
+        border: none;
+        background: transparent;
+      }
+      .tab.active {
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--panel-light);
+        color: var(--text);
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      }
+      /* Enhanced Calendar Styling - Fixed */
+      .flatpickr-calendar {
+        background: var(--panel) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8) !important;
+        font-family: inherit !important;
+      }
+      .flatpickr-calendar.open {
+        z-index: 9999 !important;
+      }
+      .flatpickr-months {
+        background: var(--panel-light) !important;
+        border-radius: 16px 16px 0 0 !important;
+        padding: 16px !important;
+        border-bottom: 1px solid var(--border) !important;
+      }
+      .flatpickr-month {
+        background: transparent !important;
+        color: var(--text) !important;
+        height: auto !important;
+      }
+      .flatpickr-current-month {
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        color: var(--text) !important;
+        line-height: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+      .flatpickr-current-month .flatpickr-monthDropdown-months {
+        background: var(--panel) !important;
+        color: var(--text) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        padding: 4px 8px !important;
+        margin: 0 4px !important;
+        font-weight: 600 !important;
+      }
+      .flatpickr-current-month input.cur-year {
+        background: var(--panel) !important;
+        color: var(--text) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        padding: 4px 8px !important;
+        margin: 0 4px !important;
+        font-weight: 600 !important;
+        width: 70px !important;
+      }
+      .flatpickr-weekdays {
+        background: var(--panel-light) !important;
+        padding: 12px 0 !important;
+      }
+      .flatpickr-weekday {
+        background: var(--panel-light) !important;
+        color: var(--text-muted) !important;
+        font-weight: 600 !important;
+        font-size: 12px !important;
+        line-height: 1 !important;
+        padding: 8px 0 !important;
+      }
+      .flatpickr-days {
+        background: var(--panel) !important;
+        padding: 8px !important;
+      }
+      .flatpickr-day {
+        background: transparent !important;
+        color: var(--text) !important;
+        border-radius: 12px !important;
+        margin: 2px !important;
+        font-weight: 500 !important;
+        width: 36px !important;
+        height: 36px !important;
+        line-height: 36px !important;
+        font-size: 14px !important;
+        border: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      .flatpickr-day:hover {
+        background: var(--panel-light) !important;
+        color: var(--text) !important;
+        border: none !important;
+      }
+      .flatpickr-day.selected,
+      .flatpickr-day.startRange,
+      .flatpickr-day.endRange {
+        background: var(--accent) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        border: none !important;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4) !important;
+      }
+      .flatpickr-day.inRange {
+        background: rgba(79, 70, 229, 0.15) !important;
+        color: var(--text) !important;
+        border: none !important;
+      }
+      .flatpickr-day.today {
+        background: var(--panel-light) !important;
+        color: var(--accent) !important;
+        font-weight: 600 !important;
+        border: 1px solid var(--accent) !important;
+      }
+      .flatpickr-day.today.selected {
+        background: var(--accent) !important;
+        color: white !important;
+        border: none !important;
+      }
+      .flatpickr-day.flatpickr-disabled,
+      .flatpickr-day.prevMonthDay,
+      .flatpickr-day.nextMonthDay {
+        color: var(--text-secondary) !important;
+        background: transparent !important;
+      }
+      .flatpickr-prev-month,
+      .flatpickr-next-month {
+        color: var(--text-muted) !important;
+        fill: var(--text-muted) !important;
+        padding: 12px !important;
+        border-radius: 8px !important;
+        width: 40px !important;
+        height: 40px !important;
+      }
+      .flatpickr-prev-month:hover,
+      .flatpickr-next-month:hover {
+        color: var(--text) !important;
+        fill: var(--text) !important;
+        background: var(--panel-light) !important;
+      }
+      .flatpickr-prev-month svg,
+      .flatpickr-next-month svg {
+        width: 16px !important;
+        height: 16px !important;
+      }
+      #daterange {
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+      }
+      #daterange:hover {
+        border-color: rgba(79, 70, 229, 0.5) !important;
+      }
+      #daterange:focus {
+        border-color: var(--accent) !important;
+      }
+      .quick-intervals {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .quick-btn {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--panel-light);
+        color: var(--text-muted);
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .quick-btn:hover,
+      .quick-btn.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+      .spy-btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, var(--accent), var(--accent-light));
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-bottom: 16px;
+      }
+      .spy-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+      }
+      .spy-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .demo-btn {
+        width: 100%;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--panel-light);
+        color: var(--text-muted);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .demo-btn:hover {
+        background: var(--panel);
+        color: var(--text);
+      }
+      .progress-section {
+        padding: 20px 0;
+        border-top: 1px solid var(--border);
+      }
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--panel-light);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 12px;
+      }
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-light));
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+      .status-text {
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 24px;
+      }
+      .metric-card {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid var(--border);
+      }
+      .metric-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+      .metric-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .chart-section {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+      }
+      .chart-card {
+        position: relative;
+        min-height: 400px;
+      }
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .chart-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .avg-price {
+        font-size: 32px;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent), var(--accent-light));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .details-card {
+       .chart-card, .details-card { height: 100%; }
+.details-card { overflow: auto; }
+.chart-canvas { height: 100% !important; }      }
+      .details-card::-webkit-scrollbar {
+        width: 6px;
+      }
+      .details-card::-webkit-scrollbar-track {
+        background: var(--panel-light);
+        border-radius: 3px;
+      }
+      .details-card::-webkit-scrollbar-thumb {
+        background: var(--accent);
+        border-radius: 3px;
+      }
+      .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        margin-bottom: 8px;
+        background: var(--panel-light);
+        border-radius: 10px;
+        transition: all 0.2s ease;
+      }
+      .detail-item:hover {
+        background: var(--panel);
+        transform: translateX(2px);
+      }
+      .detail-info {
+        display: flex;
+        flex-direction: column;
+      }
+      .detail-id {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .detail-address {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+      .detail-price {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .webhook-info {
+        background: var(--panel-light);
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 20px;
+        border-left: 4px solid var(--accent);
+      }
+      .webhook-info h4 {
+        color: var(--text);
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+      .webhook-info code {
+        background: var(--bg);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--accent-light);
+        word-break: break-all;
+        display: block;
+      }
+      @media (max-width: 1024px) {
+        .dashboard {
+          grid-template-columns: 1fr;
+          padding: 16px;
+        }
+        .metrics-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .chart-section {
+          grid-template-columns: 1fr;
+        }
+      }
+      .empty-state {
+        text-align: center;
+        color: var(--text-muted);
+        padding: 40px 20px;
+      }
+      .chart-canvas {
+        max-height: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="header">
+          <h1>Spia Competizione</h1>
+          <div class="apartment-tabs">
+            <button class="tab active" data-apartment="1">App. 1</button>
+            <button class="tab" data-apartment="2">App. 2</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="form-group">
+            <label>📅 Check-in / Check-out</label>
+            <input type="text" id="daterange" placeholder="Seleziona date soggiorno" readonly />
+          </div>
+          <div class="form-group">
+            <label>🏠 Numero appartamenti da analizzare</label>
+            <input
+              type="number"
+              id="num_apartments"
+              min="1"
+              max="10000"
+              value="200"
+              placeholder="Es. 200"
+            />
+          </div>
+          <button id="spyBtn" class="spy-btn">🔍 Spia Competizione</button>
+          <div class="progress-section">
+            <div class="progress-bar">
+              <div id="progressBar" class="progress-fill"></div>
+            </div>
+            <div class="status-text">
+              Stato: <span id="statusText">In attesa</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <div class="group">
-          <label class="label">📅 Check-in / Check-out</label>
-          <div class="input-row">
-            <input class="input" type="date" value="2025-09-03" />
-            <input class="input" type="date" value="2025-09-07" />
+      <!-- Main Content -->
+      <div class="main-content">
+        <!-- Metrics Overview -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-value" id="avgPrice">...</div>
+            <div class="metric-label">Prezzo Medio</div>
           </div>
-          <div class="pills">
-            <span class="pill">4 notti</span>
-            <span class="pill strong">Agg. 11:48</span>
+          <div class="metric-card">
+            <div class="metric-value" id="totalApartments">...</div>
+            <div class="metric-label">Appartamenti</div>
           </div>
-          <div class="shortcuts">
-            <button class="btn-s">+3 notti</button>
-            <button class="btn-s">+5 notti</button>
-            <button class="btn-s active">+7 notti</button>
+          <div class="metric-card">
+            <div class="metric-value" id="priceRange">...</div>
+            <div class="metric-label">Range Prezzi</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value" id="lastUpdate">...</div>
+            <div class="metric-label">Ultimo Aggiornamento</div>
           </div>
         </div>
 
-        <div class="group">
-          <label class="label">🏠 Numero appartamenti da analizzare</label>
-          <input class="input" type="number" value="60" />
-          <div class="help">Suggerimento: 150–300 è un buon campione.</div>
+        <!-- Charts Section -->
+        <div class="chart-section">
+          <div class="card chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Andamento Prezzi Competizione</h3>
+              <span class="live-dot" title="Live"></span>
+              <div class="avg-price" id="mainAvgPrice">... €</div>
+            </div>
+            <canvas id="priceChart" class="chart-canvas"></canvas>
+          </div>
+          <div class="card details-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Dettagli Appartamenti</h3>
+              <span class="live-dot" title="Live"></span>
+            </div>
+            <div id="apartmentsList">
+              <div class="empty-state">
+                <p>Nessun dato disponibile</p>
+                <p style="font-size: 12px; margin-top: 8px;">
+                  Avvia un'analisi per vedere i dettagli
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <button class="btn">🔍 Avvia Analisi Competizione</button>
-
-        <div class="status"><span class="dot"></span><span class="text">Analisi completata con successo</span></div>
-        <div class="bar"><div class="fill"></div></div>
       </div>
-    </aside>
+    </div>
 
-    <!-- Main -->
-    <main class="main">
-      <!-- Metrics -->
-      <section class="metrics">
-        <div class="metric">
-          <div class="val">240 €</div>
-          <div class="lbl">Prezzo Medio</div>
-        </div>
-        <div class="metric">
-          <div class="val">60</div>
-          <div class="lbl">Appartamenti</div>
-        </div>
-        <div class="metric">
-          <div class="val">180–320 €</div>
-          <div class="lbl">Range Prezzi</div>
-        </div>
-        <div class="metric">
-          <div class="val">11:48</div>
-          <div class="lbl">Ultimo Aggiornamento</div>
-        </div>
-      </section>
+    <!-- libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/l10n/it.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <!-- Google Identity Services (OAuth) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-      <!-- Chart + Details -->
-      <section class="lower">
-        <!-- Chart -->
-        <div class="card chart-card">
-          <div class="chart-head">
-            <h3 class="chart-title">Andamento Prezzi Competizione</h3>
-            <div class="chart-avg">240 €</div>
-          </div>
-          <div class="chart-box">
-            <!-- SVG statico (mock) -->
-            <svg class="chart-svg" viewBox="0 0 700 260" preserveAspectRatio="none" aria-hidden="true">
-              <!-- griglia -->
-              <g stroke="rgba(148,163,184,0.12)" stroke-width="1">
-                <line x1="0" y1="220" x2="700" y2="220"/><!-- 180€ -->
-                <line x1="0" y1="180" x2="700" y2="180"/><!-- 220€ -->
-                <line x1="0" y1="140" x2="700" y2="140"/><!-- 260€ -->
-                <line x1="0" y1="100" x2="700" y2="100"/><!-- 300€ -->
-              </g>
-              <!-- area -->
-              <defs>
-                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="rgba(99,102,241,0.45)"/>
-                  <stop offset="100%" stop-color="rgba(99,102,241,0.05)"/>
-                </linearGradient>
-              </defs>
-              <!-- punti fittizi (media ≈ 240): 228,236,244,251,239,247,236 -->
-              <!-- linea -->
-              <path d="M20,175
-                       C80,165 120,160 120,158
-                       S220,150 220,148
-                       S320,142 320,138
-                       S420,146 420,150
-                       S520,144 520,140
-                       S620,150 620,155"
-                    fill="none" stroke="#4f46e5" stroke-width="3" />
-              <!-- area sotto la linea -->
-              <path d="M20,175
-                       C80,165 120,160 120,158
-                       S220,150 220,148
-                       S320,142 320,138
-                       S420,146 420,150
-                       S520,144 520,140
-                       S620,150 620,155
-                       L620,240 L20,240 Z"
-                    fill="url(#g1)" />
-              <!-- markers -->
-              <g fill="#4f46e5">
-                <circle cx="20"  cy="175" r="4"/>
-                <circle cx="120" cy="158" r="4"/>
-                <circle cx="220" cy="148" r="4"/>
-                <circle cx="320" cy="138" r="4"/>
-                <circle cx="420" cy="150" r="4"/>
-                <circle cx="520" cy="140" r="4"/>
-                <circle cx="620" cy="155" r="4"/>
-              </g>
-            </svg>
+    <script>
+      // -----------------------------
+      // Global state / constants
+      // -----------------------------
+      let selectedInterval = 7;
+      let currentApartment = 1;
+      let priceChart = null;
+
+      // Google OAuth + Sheets
+      const GOOGLE_SHEETS_CONFIG = {
+        clientId: '15796170061-495gqatd2f372n0l1en4b6rvibhj2j8a.apps.googleusercontent.com',
+        sheetId: '1BBIV0rvDg88f_gW9Fx-JVnHrmULC5MfKwJjl4oqlMQQ'
+      };
+      const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+
+      let tokenClient = null;
+      let accessToken = null;
+      let oauthResolve = null;
+      let oauthReject = null;
+
+      // -----------------------------
+      // UI: Flatpickr
+      // -----------------------------
+      const fp = flatpickr('#daterange', {
+      showMonths: 2,
+        disableMobile: true,
+        monthSelectorType: 'static',
+        mode: 'range',
+        dateFormat: 'd/m/Y',
+        locale: 'it',
+        minDate: 'today',
+        defaultDate: [new Date(), new Date(Date.now() + 7 * 86400000)],
+        enable: [date => date.getTime() >= new Date().setHours(0, 0, 0, 0)]
+      });
+
+      // -----------------------------
+      // Tabs switching
+      // -----------------------------
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          currentApartment = parseInt(tab.dataset.apartment, 10);
+          resetDashboard();
+        });
+      });
+
+      // -----------------------------
+      // Chart
+      // -----------------------------
+      function initChart() {
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        priceChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Prezzo Medio Giornaliero',
+                data: [],
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 8,
+                borderWidth: 3
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: {
+                grid: { color: 'rgba(148, 163, 184, 0.1)', drawBorder: false },
+                ticks: { color: '#94a3b8', font: { size: 11 } }
+              },
+              y: {
+                grid: { color: 'rgba(148, 163, 184, 0.1)', drawBorder: false },
+                ticks: {
+                  color: '#94a3b8',
+                  font: { size: 11 },
+                  callback: v => v + ' €'
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // -----------------------------
+      // Reset dashboard
+      // -----------------------------
+      function resetDashboard() {
+        document.getElementById('avgPrice').textContent = '...';
+        document.getElementById('totalApartments').textContent = '...';
+        document.getElementById('priceRange').textContent = '...';
+        document.getElementById('lastUpdate').textContent = '...';
+        document.getElementById('mainAvgPrice').textContent = '... €';
+        document.getElementById('apartmentsList').innerHTML = `
+      <div class="empty-state">
+        <p>Nessun dato disponibile</p>
+        <p style="font-size: 12px; margin-top: 8px;">Avvia un'analisi per vedere i dettagli</p>
+      </div>
+    `;
+        document.getElementById('statusText').textContent = 'In attesa';
+        document.getElementById('progressBar').style.width = '0%';
+        if (priceChart) {
+          priceChart.data.labels = [];
+          priceChart.data.datasets[0].data = [];
+          priceChart.update();
+        }
+      }
+
+      // -----------------------------
+      // GIS wait helpers (nuovi)
+      // -----------------------------
+      function waitForGIS() {
+        return new Promise(resolve => {
+          const check = () => {
+            if (window.google && google.accounts && google.accounts.oauth2) return resolve();
+            setTimeout(check, 100);
+          };
+          check();
+        });
+      }
+
+      function waitForTokenClient() {
+        return new Promise(resolve => {
+          const check = () => {
+            if (tokenClient) return resolve();
+            setTimeout(check, 100);
+          };
+          check();
+        });
+      }
+
+      // -----------------------------
+      // OAuth helpers (robusti)
+      // -----------------------------
+      window.onload = () => {
+        initChart();
+        resetDashboard();
+        initOAuth(); // avvia subito il setup
+      };
+
+      function initOAuth() {
+        // se GIS non è pronto, riprova più tardi
+        if (!(window.google && google.accounts && google.accounts.oauth2)) {
+          setTimeout(initOAuth, 200);
+          return;
+        }
+
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_SHEETS_CONFIG.clientId,
+          scope: SHEETS_SCOPE,
+          callback: resp => {
+            if (resp && resp.access_token) {
+              accessToken = resp.access_token;
+              console.log('✅ OAuth ottenuto');
+              if (oauthResolve) {
+                oauthResolve(accessToken);
+                oauthResolve = null;
+              }
+            } else {
+              console.error('❌ OAuth error:', resp);
+              document.getElementById('statusText').textContent = 'Autenticazione fallita';
+              if (oauthReject) {
+                oauthReject(new Error(resp?.error || 'oauth_failed'));
+                oauthReject = null;
+              }
+            }
+          }
+        });
+      }
+
+      async function ensureOAuth() {
+        await waitForGIS();
+        if (!tokenClient) {
+          initOAuth();
+          await waitForTokenClient();
+        }
+
+        if (accessToken) return accessToken;
+
+        return new Promise((resolve, reject) => {
+          oauthResolve = resolve;
+          oauthReject = reject;
+          try {
+            tokenClient.requestAccessToken({ prompt: '' });
+          } catch (e) {
+            // se per qualche motivo fallisce, riprova chiedendo il consenso
+            try {
+              tokenClient.requestAccessToken({ prompt: 'consent' });
+            } catch (e2) {
+              reject(e2);
+            }
+          }
+        });
+      }
+
+      async function sheetsGet(range) {
+        await ensureOAuth();
+
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEETS_CONFIG.sheetId}/values/${encodeURIComponent(
+          range
+        )}?valueRenderOption=UNFORMATTED_VALUE`;
+
+        let res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+
+        if (res.status === 401) {
+          console.warn('🔁 Token scaduto: rinnovo...');
+          accessToken = null;
+          await ensureOAuth();
+          res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+        }
+
+        if (!res.ok) {
+          const text = await res.text();
+          console.error('Sheets error:', res.status, text);
+          throw new Error(`Sheets error ${res.status}: ${text}`);
+        }
+
+        return res.json();
+      }
+
+      // -----------------------------
+      // Timer
+      // -----------------------------
+      function runProgressTimer(seconds) {
+        return new Promise(resolve => {
+          if (seconds <= 0) {
+            document.getElementById('progressBar').style.width = '100%';
+            setTimeout(() => {
+              document.getElementById('progressBar').style.width = '0%';
+              resolve();
+            }, 500);
+            return;
+          }
+          let elapsed = 0;
+          const interval = setInterval(() => {
+            elapsed++;
+            const progress = Math.min(100, (elapsed / seconds) * 100);
+            document.getElementById('progressBar').style.width = progress + '%';
+
+            const remaining = Math.max(0, seconds - elapsed);
+            const mm = Math.floor(remaining / 60);
+            const ss = remaining % 60;
+            document.getElementById('statusText').textContent =
+              mm > 0 ? `Attesa: ${mm}m ${ss}s rimanenti...` : `Attesa: ${ss}s rimanenti...`;
+
+            if (elapsed >= seconds) {
+              clearInterval(interval);
+              setTimeout(() => {
+                document.getElementById('progressBar').style.width = '0%';
+                resolve();
+              }, 300);
+            }
+          }, 1000);
+        });
+      }
+
+      // -----------------------------
+      // Sheets data (mappatura A-G)
+      // -----------------------------
+      // (lasciata per compatibilità; non usata per il timer)
+      async function getDelayFromGoogleSheets(startDate, endDate) {
+        const resp = await sheetsGet('A2:G10000');
+        const rows = resp.values || [];
+        let delay = null;
+        for (const r of rows) {
+          const e = r[4],
+            f = r[5],
+            d = r[2];
+          if (e === startDate && f === endDate && d !== undefined && d !== '') {
+            const n = parseInt(d, 10);
+            if (!Number.isNaN(n)) {
+              delay = n;
+              break;
+            }
+          }
+        }
+        if (delay === null) {
+          for (const r of rows) {
+            const n = parseInt(r[2], 10);
+            if (!Number.isNaN(n)) {
+              delay = n;
+              break;
+            }
+          }
+        }
+        return delay === null ? 2 : delay;
+      }
+// Converte un valore date di Google Sheets (numero seriale o stringa) in ISO "YYYY-MM-DD"
+function sheetsValueToISODate(v) {
+  if (v == null || v === '') return '';
+  // Se è un numero: seriale Google/Excel (giorni dal 1899-12-30)
+  if (typeof v === 'number') {
+    const base = new Date(Date.UTC(1899, 11, 30));
+    const ms = v * 24 * 60 * 60 * 1000;
+    const d = new Date(base.getTime() + ms);
+    return d.toISOString().slice(0, 10);
+  }
+  // Se è stringa tipo "dd/mm/yyyy" o "dd-mm-yyyy"
+  if (typeof v === 'string') {
+    const m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if (m) {
+      const dd = String(m[1]).padStart(2,'0');
+      const mm = String(m[2]).padStart(2,'0');
+      let yyyy = m[3];
+      if (yyyy.length === 2) yyyy = (Number(yyyy) < 50 ? '20' : '19') + yyyy;
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    // Se è già ISO
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  }
+  return '';
+}
+   async function getApartmentDataFromGoogleSheets(startDate, endDate) {
+  const resp = await sheetsGet('A2:F10000'); // Legge A..F
+  const rows = resp.values || [];
+
+  const filtered = rows.filter(r => {
+    const eISO = sheetsValueToISODate(r[4]); // E = start
+    const fISO = sheetsValueToISODate(r[5]); // F = end
+    return eISO === startDate && fISO === endDate;
+  });
+
+  const mapped = filtered.map((r, idx) => ({
+    url: r[0] || '',
+    name: r[1] || '',
+    price: Number(r[2] || 0),
+    avgPriceRow: Number(r[3] || 0),
+    start_date: sheetsValueToISODate(r[4]) || '',
+    end_date: sheetsValueToISODate(r[5]) || '',
+    id: (r[1] && String(r[1]).trim()) || `#${idx + 1}`,
+    address: r[0] || ''
+  }));
+
+  console.log('🔎 Rows totali:', rows.length, ' | Filtrate:', mapped.length, { startDate, endDate });
+  return mapped;
+}
+
+      // -----------------------------
+      // Real-time/progressive helpers
+      // -----------------------------
+      let currentAnalysis = { apartments: [], totalReceived: 0, averagePrice: 0, isComplete: false };
+
+      function updateDashboardProgressively() {
+        document.getElementById('totalApartments').textContent = currentAnalysis.apartments.length;
+
+        const listContainer = document.getElementById('apartmentsList');
+        listContainer.innerHTML = '';
+        currentAnalysis.apartments.forEach((apartment, index) => {
+          const item = document.createElement('div');
+          item.className = 'detail-item';
+          item.style.opacity = '0';
+          item.style.transform = 'translateY(10px)';
+          item.innerHTML = `
+        <div class="detail-info">
+          <div class="detail-id">#${apartment.id || (index + 1)}</div>
+          <div class="detail-address">${apartment.address}</div>
+          <div class="detail-address">
+            <a href="${apartment.url}" target="_blank" style="color: var(--accent); font-size: 11px; text-decoration: none;">
+              🔗 Visualizza annuncio
+            </a>
           </div>
         </div>
+        <div class="detail-price">${Number(apartment.price || 0).toLocaleString('it-IT')} €</div>
+      `;
+          listContainer.appendChild(item);
+          setTimeout(() => {
+            item.style.transition = 'all 0.3s ease';
+            item.style.opacity = '1';
+            item.style.transform = 'translateY(0)';
+          }, index * 100);
+        });
 
-        <!-- Details -->
-        <div class="card details">
-          <div class="details-head">
-            <h3 style="font-size:18px;font-weight:800">Dettagli Appartamenti</h3>
-            <div class="toggle">
-              <button class="t active">Dettagli</button>
-              <button class="t">Storico</button>
-            </div>
-          </div>
+        if (priceChart && currentAnalysis.apartments.length > 0) {
+          const prices = currentAnalysis.apartments.map(apt => Number(apt.price || 0));
+          const avgSoFar = prices.reduce((a, b) => a + b, 0) / prices.length;
+          priceChart.data.labels = currentAnalysis.apartments.map((_, i) => `Apt ${i + 1}`);
+          priceChart.data.datasets[0].data = prices;
+          priceChart.data.datasets[0].label = `Prezzi Ricevuti (${currentAnalysis.apartments.length})`;
+          priceChart.update();
 
-          <div class="list" style="margin-bottom:10px">
-            <!-- 12 elementi d'esempio -->
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Ca’ Rialto Loft</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">960 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Laguna Suite</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">1.020 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">San Marco View</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">1.040 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Canal Grande Stay</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">920 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Gondola House</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">980 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Dorsoduro Chic</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">1.120 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Arsenale Attic</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">1.000 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Sestiere Elegance</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">890 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Fondamenta Classy</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">1.060 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Biennale Studio</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">940 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Murano Pearl</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">1.080 €</div>
-            </div>
-            <div class="item">
-              <div class="i-info">
-                <div class="i-name">Giudecca Horizon</div>
-                <div class="i-sub"><a href="#" style="color:var(--accent);text-decoration:none">🔗 Visualizza annuncio</a></div>
-              </div>
-              <div class="i-price">1.010 €</div>
-            </div>
-          </div>
+          document.getElementById('avgPrice').textContent = `${Math.round(avgSoFar).toLocaleString('it-IT')} €`;
+          document.getElementById('mainAvgPrice').textContent = `${Math.round(avgSoFar).toLocaleString('it-IT')} €`;
+        }
+      }
 
-          <!-- mini storico (statico) -->
-          <h4 style="margin:6px 0 8px;font-size:13px;color:var(--text-muted);font-weight:800">Storico analisi</h4>
-          <div class="list" style="max-height:140px">
-            <div class="item" style="background:transparent;border-style:dashed">
-              <div class="i-info">
-                <div class="i-name">27/08 → 03/09 • 58 apt</div>
-                <div class="i-sub">Prezzo medio 238 € • Range 175–315 €</div>
-              </div>
-              <div class="i-price">OK</div>
-            </div>
-            <div class="item" style="background:transparent;border-style:dashed">
-              <div class="i-info">
-                <div class="i-name">20/08 → 24/08 • 62 apt</div>
-                <div class="i-sub">Prezzo medio 241 € • Range 180–328 €</div>
-              </div>
-              <div class="i-price">OK</div>
-            </div>
-            <div class="item" style="background:transparent;border-style:dashed">
-              <div class="i-info">
-                <div class="i-name">10/08 → 15/08 • 64 apt</div>
-                <div class="i-sub">Prezzo medio 243 € • Range 185–334 €</div>
-              </div>
-              <div class="i-price">OK</div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-</body>
+      function completeDashboardUpdate() {
+        const prices = currentAnalysis.apartments
+          .map(apt => Number(apt.price || 0))
+          .filter(n => !Number.isNaN(n));
+        const avg = prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+
+        document.getElementById('avgPrice').textContent = `${avg.toLocaleString('it-IT')} €`;
+        document.getElementById('mainAvgPrice').textContent = `${avg.toLocaleString('it-IT')} €`;
+
+        if (prices.length > 0) {
+          const minPrice = Math.min(...prices);
+          const maxPrice = Math.max(...prices);
+          document.getElementById('priceRange').textContent = `${minPrice.toLocaleString('it-IT')}-${maxPrice.toLocaleString(
+            'it-IT'
+          )}€`;
+        } else {
+          document.getElementById('priceRange').textContent = '0-0€';
+        }
+
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('it-IT', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        // Serie temporale sintetica basata sulla media finale
+        if (priceChart) {
+          const labels = [];
+          const dataset = [];
+          for (let i = selectedInterval - 1; i >= 0; i--) {
+            const d = new Date(Date.now() - i * 86400000);
+            labels.push(d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }));
+            const variation = (Math.random() - 0.5) * 0.15; // ±7.5%
+            dataset.push(Math.max(0, Math.round(avg * (1 + variation))));
+          }
+          priceChart.data.labels = labels;
+          priceChart.data.datasets[0].data = dataset;
+          priceChart.data.datasets[0].label = 'Andamento Prezzi Periodo';
+          priceChart.update();
+        }
+
+        document.getElementById('statusText').textContent = 'Analisi completata con successo';
+        document.getElementById('spyBtn').disabled = false;
+      }
+
+      // -----------------------------
+      // PROCESSO "SPIA COMPETIZIONE"
+      // -----------------------------
+      document.addEventListener('DOMContentLoaded', () => {
+        const spyBtn = document.getElementById('spyBtn');
+        if (!spyBtn) return;
+
+        spyBtn.addEventListener('click', async function (event) {
+          event.preventDefault();
+          if (!priceChart) initChart();
+          try {
+            this.disabled = true;
+            document.getElementById('statusText').textContent = 'Preparazione analisi...';
+
+            // Reset stato runtime
+            currentAnalysis = { apartments: [], totalReceived: 0, averagePrice: 0, isComplete: false };
+            resetDashboard();
+
+            // Dati form
+            const numApartments = parseInt(document.getElementById('num_apartments').value, 10) || 200;
+            const selectedDates = fp.selectedDates;
+            let startDate, endDate;
+            if (selectedDates && selectedDates.length === 2) {
+              startDate = selectedDates[0].toISOString().slice(0, 10);
+              endDate = selectedDates[1].toISOString().slice(0, 10);
+            } else {
+              const today = new Date();
+              const nextWeek = new Date(today.getTime() + 7 * 86400000);
+              startDate = today.toISOString().slice(0, 10);
+              endDate = nextWeek.toISOString().slice(0, 10);
+              fp.setDate([today, nextWeek]);
+            }
+
+            // 1) POST al webhook
+            const payload = {
+              numero_appartamenti: numApartments,
+              start_date: startDate,
+              end_date: endDate,
+              appartamento_id: currentApartment
+            };
+            document.getElementById('statusText').textContent = 'Invio richiesta al sistema...';
+            try {
+              const res = await fetch('https://hook.eu2.make.com/rel45yd0qwuq5p3l1kkf9bcb40ioxpgz', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              console.log('📡 Webhook status:', res.status);
+            } catch (e) {
+              console.warn('⚠️ Errore invio webhook (continuo lo stesso):', e);
+            }
+
+            // 2) OAuth durante il gesto utente
+            document.getElementById('statusText').textContent = 'Autenticazione Google...';
+            await ensureOAuth();
+
+            // 3) Timer fisso di 240 secondi con barra
+            const fixedDelaySeconds = 5;
+            document.getElementById('statusText').textContent = `Attesa elaborazione (${fixedDelaySeconds}s)...`;
+            await runProgressTimer(fixedDelaySeconds);
+
+            // 4) Lettura finale da Sheets
+            // 4) Lettura finale da Sheets
+document.getElementById('statusText').textContent = 'Recupero risultati finali...';
+const apartmentsData = await getApartmentDataFromGoogleSheets(startDate, endDate);
+console.log('📄 Rows ricevute:', apartmentsData?.length);
+
+// Se non arrivano dati, esci
+if (!apartmentsData || apartmentsData.length === 0) {
+  document.getElementById('apartmentsList').innerHTML = `
+    <div class="empty-state">
+      <p>Nessun dato disponibile</p>
+      <p style="font-size: 12px; margin-top: 8px;">Avvia un'analisi per vedere i dettagli</p>
+    </div>`;
+  document.getElementById('statusText').textContent = 'Nessun appartamento trovato per le date selezionate';
+  this.disabled = false;
+  return; // <— importante per non proseguire
+}
+
+/* --------------------------
+   5a) DETTAGLI APPARTAMENTI
+   -------------------------- */
+const listContainer = document.getElementById('apartmentsList');
+listContainer.innerHTML = '';
+apartmentsData.forEach((apt, index) => {
+  const item = document.createElement('div');
+  item.className = 'detail-item';
+  item.innerHTML = `
+    <div class="detail-info">
+      <div class="detail-id">${apt.name || ('Annuncio #' + (index+1))}</div>
+      <div class="detail-address" style="margin-top:2px;">
+        <a href="${apt.url}" target="_blank" style="color: var(--accent); font-size: 12px; text-decoration: none;">
+          🔗 ${apt.url}
+        </a>
+      </div>
+    </div>
+    <div class="detail-price">${Number(apt.price||0).toLocaleString('it-IT')} € / notte</div>
+  `;
+  listContainer.appendChild(item);
+});
+
+/* --------------------------
+   3a) GRAFICO: Nome + Prezzo
+   -------------------------- */
+if (priceChart) {/* 3a) GRAFICO: Nome + Prezzo */
+const labels = apartmentsData.map(a => a.name || a.id || '—');
+const data = apartmentsData.map(a => Number(a.price || 0));
+
+// Disegna il grafico solo se è pronto
+if (priceChart) {
+  priceChart.data.labels = labels;
+  priceChart.data.datasets[0].data = data;
+  priceChart.data.datasets[0].label = 'Prezzo per annuncio (€/notte)';
+  priceChart.update();
+}
+
+// Aggiorna SEMPRE le metriche (anche se il grafico non c'è)
+const minP = Math.min(...data);
+const maxP = Math.max(...data);
+const avgP = Math.round(data.reduce((s,v)=>s+v,0) / data.length);
+
+document.getElementById('avgPrice').textContent = `${avgP.toLocaleString('it-IT')} €`;
+document.getElementById('mainAvgPrice').textContent = `${avgP.toLocaleString('it-IT')} €`;
+document.getElementById('priceRange').textContent = `${minP.toLocaleString('it-IT')}-${maxP.toLocaleString('it-IT')}€`;
+document.getElementById('totalApartments').textContent = data.length;
+document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+
+
+// Stato finale
+document.getElementById('statusText').textContent = 'Analisi completata con successo';
+this.disabled = false;
+
+           } catch (error) {
+            console.error('❌ Errore processo spia:', error);
+            document.getElementById('statusText').textContent = 'Errore durante l’analisi';
+            this.disabled = false;
+          }
+        });
+      });
+    </script>
+  </body>
 </html>
