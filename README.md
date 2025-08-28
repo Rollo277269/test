@@ -487,9 +487,9 @@
         background-clip: text;
       }
       .details-card {
-        max-height: 400px;
-        overflow-y: auto;
-      }
+       .chart-card, .details-card { height: 100%; }
+.details-card { overflow: auto; }
+.chart-canvas { height: 100% !important; }      }
       .details-card::-webkit-scrollbar {
         width: 6px;
       }
@@ -993,23 +993,21 @@ function sheetsValueToISODate(v) {
   }
   return '';
 }
-      async function getApartmentDataFromGoogleSheets(startDate, endDate) {
-  const resp = await sheetsGet('A2:F10000'); // <-- non serve la colonna G
+   async function getApartmentDataFromGoogleSheets(startDate, endDate) {
+  const resp = await sheetsGet('A2:F10000'); // Legge A..F
   const rows = resp.values || [];
 
-  // Normalizza date e filtra
   const filtered = rows.filter(r => {
-    const eISO = sheetsValueToISODate(r[4]); // E = start-date
-    const fISO = sheetsValueToISODate(r[5]); // F = end-date
+    const eISO = sheetsValueToISODate(r[4]); // E = start
+    const fISO = sheetsValueToISODate(r[5]); // F = end
     return eISO === startDate && fISO === endDate;
   });
 
-  // Mappa secondo lo schema colonne (A-F)
   const mapped = filtered.map((r, idx) => ({
     url: r[0] || '',
     name: r[1] || '',
-    price: Number(r[2] || 0),          // C = price €/notte
-    avgPriceRow: Number(r[3] || 0),    // D = avrg. price (non indispensabile)
+    price: Number(r[2] || 0),
+    avgPriceRow: Number(r[3] || 0),
     start_date: sheetsValueToISODate(r[4]) || '',
     end_date: sheetsValueToISODate(r[5]) || '',
     id: (r[1] && String(r[1]).trim()) || `#${idx + 1}`,
@@ -1121,6 +1119,7 @@ function sheetsValueToISODate(v) {
 
         spyBtn.addEventListener('click', async function (event) {
           event.preventDefault();
+          if (!priceChart) initChart();
           try {
             this.disabled = true;
             document.getElementById('statusText').textContent = 'Preparazione analisi...';
@@ -1215,26 +1214,29 @@ apartmentsData.forEach((apt, index) => {
 /* --------------------------
    3a) GRAFICO: Nome + Prezzo
    -------------------------- */
-if (priceChart) {
-  const labels = apartmentsData.map(a => a.name || a.id || '—');
-  const data = apartmentsData.map(a => Number(a.price || 0));
+if (priceChart) {/* 3a) GRAFICO: Nome + Prezzo */
+const labels = apartmentsData.map(a => a.name || a.id || '—');
+const data = apartmentsData.map(a => Number(a.price || 0));
 
+// Disegna il grafico solo se è pronto
+if (priceChart) {
   priceChart.data.labels = labels;
   priceChart.data.datasets[0].data = data;
   priceChart.data.datasets[0].label = 'Prezzo per annuncio (€/notte)';
   priceChart.update();
-
-  // Aggiorna metriche
-  const minP = Math.min(...data);
-  const maxP = Math.max(...data);
-  const avgP = Math.round(data.reduce((s,v)=>s+v,0) / data.length);
-
-  document.getElementById('avgPrice').textContent = `${avgP.toLocaleString('it-IT')} €`;
-  document.getElementById('mainAvgPrice').textContent = `${avgP.toLocaleString('it-IT')} €`;
-  document.getElementById('priceRange').textContent = `${minP.toLocaleString('it-IT')}-${maxP.toLocaleString('it-IT')}€`;
-  document.getElementById('totalApartments').textContent = data.length;
-  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
 }
+
+// Aggiorna SEMPRE le metriche (anche se il grafico non c'è)
+const minP = Math.min(...data);
+const maxP = Math.max(...data);
+const avgP = Math.round(data.reduce((s,v)=>s+v,0) / data.length);
+
+document.getElementById('avgPrice').textContent = `${avgP.toLocaleString('it-IT')} €`;
+document.getElementById('mainAvgPrice').textContent = `${avgP.toLocaleString('it-IT')} €`;
+document.getElementById('priceRange').textContent = `${minP.toLocaleString('it-IT')}-${maxP.toLocaleString('it-IT')}€`;
+document.getElementById('totalApartments').textContent = data.length;
+document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+
 
 // Stato finale
 document.getElementById('statusText').textContent = 'Analisi completata con successo';
